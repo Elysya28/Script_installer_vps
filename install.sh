@@ -10,7 +10,7 @@ set -e
 
 # --- Variabel Konfigurasi ---
 TARGET_DIR="/root/trojan-manager"
-FILE_URL="https://raw.githubusercontent.com/Elysya28/trojan-vps/main/trojan-manager.zip"
+FILE_URL="https://raw.githubusercontent.com/Elysya28/Script_installer_vps/main/trojan-manager.zip"
 ZIP_FILE_NAME="trojan-manager.zip"
 EXEC_SCRIPT="main.sh"
 
