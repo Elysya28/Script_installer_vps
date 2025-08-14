@@ -1,0 +1,148 @@
+{
+  "log": {
+    "loglevel": "warning"
+  },
+  "dns": {
+    "servers": [
+      "1.1.1.1",
+      "8.8.8.8",
+      "localhost"
+    ]
+  },
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "type": "field",
+        "outboundTag": "blocked",
+        "domain": [
+          "geosite:category-ads-all"
+        ]
+      }
+    ]
+  },
+  "inbounds": [
+    {
+      "port": 2021,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "9b93dc93-197a-42be-968c-4c25e855ef7f",
+            "flow": "xtls-rprx-vision"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "tlsSettings": {
+          "certificates": [
+            {
+              "certificateFile": "/var/lib/marzban/certs/fullchain.pem",
+              "keyFile": "/var/lib/marzban/certs/key.pem"
+            }
+          ]
+        },
+        "wsSettings": {
+          "path": "/vless-ws"
+        }
+      },
+      "tag": "vless-ws-tls"
+    },
+    {
+      "port": 2022,
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "9b93dc93-197a-42be-968c-4c25e855ef7f",
+            "flow": "xtls-rprx-vision"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "security": "tls",
+        "tlsSettings": {
+          "certificates": [
+            {
+              "certificateFile": "/var/lib/marzban/certs/fullchain.pem",
+              "keyFile": "/var/lib/marzban/certs/key.pem"
+            }
+          ]
+        },
+        "grpcSettings": {
+          "serviceName": "vless"
+        }
+      },
+      "tag": "vless-grpc-tls"
+    },
+    {
+      "port": 2023,
+      "protocol": "trojan",
+      "settings": {
+        "clients": [
+          {
+            "password": "9b93dc93-197a-42be-968c-4c25e855ef7f"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "tlsSettings": {
+          "certificates": [
+            {
+              "certificateFile": "/var/lib/marzban/certs/fullchain.pem",
+              "keyFile": "/var/lib/marzban/certs/key.pem"
+            }
+          ]
+        },
+        "wsSettings": {
+          "path": "/trojan-ws"
+        }
+      },
+      "tag": "trojan-ws-tls"
+    },
+    {
+      "port": 2024,
+      "protocol": "trojan",
+      "settings": {
+        "clients": [
+          {
+            "password": "9b93dc93-197a-42be-968c-4c25e855ef7f"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "security": "tls",
+        "tlsSettings": {
+          "certificates": [
+            {
+              "certificateFile": "/var/lib/marzban/certs/fullchain.pem",
+              "keyFile": "/var/lib/marzban/certs/key.pem"
+            }
+          ]
+        },
+        "grpcSettings": {
+          "serviceName": "trojan"
+        }
+      },
+      "tag": "trojan-grpc-tls"
+    }
+  ],
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "tag": "blocked"
+    }
+  ]
+}
