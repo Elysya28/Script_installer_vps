@@ -53,7 +53,7 @@ if command -v marzban >/dev/null 2>&1; then
   marzban uninstall
 fi
 
-bash -c "$(curl -sL https://github.com/nationpwned/vps/raw/refs/heads/marzban-nowarp/marzban)" @ install
+bash -c "$(curl -sL https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/marzban)" @ install
 sleep 50
 
 marzban cli admin create --sudo
