@@ -102,23 +102,23 @@ else
     chmod 644 "/var/lib/marzban/certs/fullchain.pem"
 fi
 
-wget -O /opt/marzban/.env https://github.com/nationpwned/vps/raw/refs/heads/marzban-nowarp/env
+wget -O /opt/marzban/.env https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/env
 # Download docker-compose.yml
-wget -O /opt/marzban/docker-compose.yml https://github.com/nationpwned/vps/raw/refs/heads/marzban-nowarp/docker-compose.yml
+wget -O /opt/marzban/docker-compose.yml https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/docker-compose.yml
 
 # Download nginx.conf
-wget -O /opt/marzban/nginx.conf https://github.com/nationpwned/vps/raw/refs/heads/marzban-nowarp/nginx.conf
+wget -O /opt/marzban/nginx.conf https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/nginx.conf
 # Replace placeholders in nginx.conf with user input
 sed -i "s/server_name \$DOMAIN;/server_name $DOMAIN;/" /opt/marzban/nginx.conf
 
 # Download xray_config.json
-wget -O /var/lib/marzban/xray_config.json https://github.com/nationpwned/vps/raw/refs/heads/marzban-nowarp/xray_config.json
+wget -O /var/lib/marzban/xray_config.json https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/xray_config.json
 
 sed -i "s/YOUR_UUID/$XRAY_UUID/" /var/lib/marzban/xray_config.json
 
 # Download the subscribers marzban
 mkdir -p /var/lib/marzban/templates/subscription/
-wget -N -P /var/lib/marzban/templates/subscription/ https://github.com/nationpwned/vps/raw/refs/heads/marzban-nowarp/index.html
+wget -N -P /var/lib/marzban/templates/subscription/ https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/index.html
 
 # add geoip and geosite
 wget -N -P /var/lib/marzban/assets/geosite.dat https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat
