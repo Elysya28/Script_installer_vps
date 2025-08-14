@@ -120,6 +120,10 @@ sed -i "s/YOUR_UUID/$XRAY_UUID/" /var/lib/marzban/xray_config.json
 mkdir -p /var/lib/marzban/templates/subscription/
 wget -N -P /var/lib/marzban/templates/subscription/ https://github.com/nationpwned/vps/raw/refs/heads/marzban-nowarp/index.html
 
+# add geoip and geosite
+wget -N -P /var/lib/marzban/assets/geosite.dat https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat
+wget -N -P /var/lib/marzban/assets/geoip.dat https://github.com/v2fly/geoip/releases/latest/download/geoip.dat
+
 # Firewall configuration
 echo "Configuring firewall..."
 ufw allow 8000/tcp
