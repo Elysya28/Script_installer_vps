@@ -1,73 +1,180 @@
 #!/bin/bash
 
-# ==============================================================================
-# Skrip untuk mengunduh, mengekstrak, dan menjalankan Trojan Manager
-# Fitur: Membersihkan dirinya sendiri setelah selesai.
-# ==============================================================================
-
-# Hentikan eksekusi jika ada perintah yang gagal
 set -e
+# Ensure running as root
+if [ "$EUID" -ne 0 ]; then
+  echo "Please run as root (e.g., with sudo su)" >&2
+  exit 1
+fi
+# Define the domain for your marzban instance
+read -p "Enter your domain for marzban: " DOMAIN
+read -p "Enter your email for SSL certificate (inibudi@daouse.com): " MAIL
 
-# --- Variabel Konfigurasi ---
-TARGET_DIR="/root/trojan-manager"
-FILE_URL="https://raw.githubusercontent.com/Elysya28/Script_installer_vps/main/trojan-manager.zip"
-ZIP_FILE_NAME="trojan-manager.zip"
-EXEC_SCRIPT="main.sh"
 
-# --- Fungsi untuk menampilkan pesan ---
-log() {
-    echo "=> $1"
-}
+# Update the system and install necessary packages
+apt update -qq -y
+apt install curl wget git ufw gnupg2 lsb-release socat tree idn net-tools vnstat iptables xz-utils apt-transport-https dnsutils cron bash-completion -y
 
-# --- Pengecekan Awal ---
-
-# 1. Pastikan skrip dijalankan sebagai root
-if [ "$(id -u)" -ne 0 ]; then
-   echo "Kesalahan: Skrip ini harus dijalankan dengan hak akses root." >&2
-   echo "Silakan coba lagi menggunakan: sudo bash $0" >&2
-   exit 1
+# Install speedtest
+echo "Checking for existing speedtest installation..."
+if command -v speedtest >/dev/null 2>&1; then
+    echo "speedtest is already installed. Skipping installation."
+else
+    echo "Installing speedtest..."
+    wget -q https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz > /dev/null 2>&1
+    tar xzf ookla-speedtest-1.2.0-linux-x86_64.tgz > /dev/null 2>&1
+    mv speedtest /usr/bin/
+    rm -f ookla-* speedtest.* > /dev/null 2>&1
 fi
 
-# 2. Pastikan wget dan unzip terinstall
-log "Memeriksa perangkat yang dibutuhkan (wget dan unzip)..."
-if ! command -v wget &> /dev/null || ! command -v unzip &> /dev/null; then
-    log "wget atau unzip tidak ditemukan. Mencoba menginstall..."
-    apt-get update
-    apt-get install -y wget unzip
+# Enable BBR
+echo "Enabling BBR congestion control..."
+modprobe tcp_bbr >/dev/null 2>&1
+echo "tcp_bbr" | tee -a /etc/modules-load.d/modules.conf
+sysctl -w net.core.default_qdisc=fq
+sysctl -w net.ipv4.tcp_congestion_control=bbr
+if sysctl net.ipv4.tcp_congestion_control | grep -q bbr; then
+  echo "BBR has been enabled."
+else
+  echo "Failed to enable BBR."
 fi
 
-# --- Proses Utama ---
+sysctl -w net.mptcp.enabled=1
+if sysctl net.mptcp.enabled | grep -q "net.mptcp.enabled = 1"; then
+  echo "MPTCP has been enabled."
+else
+  echo "Failed to enable MPTCP."
+fi
 
-log "Membuat direktori instalasi di $TARGET_DIR"
-mkdir -p "$TARGET_DIR"
+sysctl -p >/dev/null 2>&1
 
-# Pindah ke direktori target
-cd "$TARGET_DIR"
-log "Berpindah ke direktori $TARGET_DIR"
+if command -v marzban >/dev/null 2>&1; then
+  echo "Existing marzban installation detected. Uninstalling..."
+  marzban uninstall
+fi
 
-log "Mengunduh file dari GitHub..."
-wget -q -O "$ZIP_FILE_NAME" "$FILE_URL"
+bash -c "$(curl -sL https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/marzban)" @ install
+sleep 50
 
-log "Mengekstrak file arsip..."
-# Opsi -o untuk menimpa file yang ada tanpa bertanya
-unzip -o "$ZIP_FILE_NAME"
+marzban cli admin create --sudo
 
-log "Membersihkan file arsip yang sudah tidak diperlukan..."
-rm "$ZIP_FILE_NAME"
+[ -f /$HOME/reality.txt ] && rm -f /$HOME/reality.txt
+[ -f /$HOME/shortIds.txt ] && rm -f /$HOME/shortIds.txt
+[ -f /$HOME/xray_uuid.txt ] && rm -f /$HOME/xray_uuid.txt
 
-log "Memberikan izin eksekusi (755) ke semua file..."
-chmod -R 755 .
+# Generate Reality keys
+echo "Generating Reality keys..."
+docker exec marzban-marzban-1 xray x25519 genkey > /$HOME/reality.txt
+PRIVATE_KEY=$(grep -oP 'Private key: \K\S+' /$HOME/reality.txt)
+PUBLIC_KEY=$(grep -oP 'Public key: \K\S+' /$HOME/reality.txt)
 
-log "Semua persiapan selesai. Menjalankan skrip utama ($EXEC_SCRIPT)..."
-echo "------------------------------------------------------------"
+# Generate shortIds
+echo "Generating shortIds..."
+openssl rand -hex 8 > /$HOME/shortIds.txt
+SHORTIDS=$(cat /$HOME/shortIds.txt)
 
-# Menjalankan skrip utama
-./"$EXEC_SCRIPT"
+# Generating uuid for Reality
+echo "Generating UUID for Reality..."
+if ! docker ps | grep -q marzban-marzban-1; then
+  echo "marzban container not running! Exiting."
+  exit 1
+fi
+docker exec marzban-marzban-1 xray uuid > /$HOME/xray_uuid.txt
+XRAY_UUID=$(cat /$HOME/xray_uuid.txt)
+if [[ -z "$XRAY_UUID" ]]; then
+  echo "Failed to generate UUID. Exiting."
+  exit 1
+fi
 
-echo "------------------------------------------------------------"
-log "Skrip utama telah selesai dieksekusi."
+# Check if certificate already exists
+rm -Rf /var/lib/marzban/certs >/dev/null 2>&1 || true
+if [[ -f "/var/lib/marzban/certs/fullchain.pem" && -f "/var/lib/marzban/certs/key.pem" ]]; then
+    echo "SSL certificate already exists. Skipping certificate installation."
+else
+    # Install Certificate using acme.sh
+    bash -c "curl https://get.acme.sh | sh -s email=$MAIL"
+    mkdir -p /var/lib/marzban/certs
+    bash -c "~/.acme.sh/acme.sh --issue --force --standalone -d \"$DOMAIN\" --fullchain-file \"/var/lib/marzban/certs/fullchain.pem\" --key-file \"/var/lib/marzban/certs/key.pem\""
+    marzban down
 
-log "Membersihkan skrip installer ini (self-destruct)..."
-(sleep 2 && rm -- "$0") &
+    # Set proper permissions
+    chmod 600 "/var/lib/marzban/certs/key.pem"
+    chmod 644 "/var/lib/marzban/certs/fullchain.pem"
+fi
 
-exit 0
+wget -O /opt/marzban/.env https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/env
+# Download docker-compose.yml
+wget -O /opt/marzban/docker-compose.yml https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/docker-compose.yml
+
+# Download nginx.conf
+wget -O /opt/marzban/nginx.conf https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/nginx.conf
+# Replace placeholders in nginx.conf with user input
+sed -i "s/server_name \$DOMAIN;/server_name $DOMAIN;/" /opt/marzban/nginx.conf
+
+# Download xray_config.json
+wget -O /var/lib/marzban/xray_config.json https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/xray_config.json
+
+sed -i "s/YOUR_UUID/$XRAY_UUID/" /var/lib/marzban/xray_config.json
+
+# Download the subscribers marzban
+mkdir -p /var/lib/marzban/templates/subscription/
+wget -N -P /var/lib/marzban/templates/subscription/ https://raw.githubusercontent.com/Elysya28/Script_installer_vps/maz1/index.html
+
+# add geoip and geosite
+wget -N -P /var/lib/marzban/assets/geosite.dat https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat
+wget -N -P /var/lib/marzban/assets/geoip.dat https://github.com/v2fly/geoip/releases/latest/download/geoip.dat
+
+# Firewall configuration
+echo "Configuring firewall..."
+ufw allow 8000/tcp
+ufw allow 80/tcp
+ufw allow 443/tcp
+ufw allow 8443/tcp
+ufw allow 8444/tcp
+ufw allow 8445/tcp
+ufw allow 8446/tcp
+ufw allow 8447/tcp
+ufw allow 8448/tcp
+ufw allow 9443/tcp
+ufw allow 10443/tcp
+ufw allow 22/tcp
+ufw allow 2222/tcp
+ufw allow 2021/tcp
+ufw allow 2022/tcp
+ufw allow 2023/tcp
+ufw allow 2024/tcp
+ufw allow 2025/tcp
+ufw allow 51820/tcp
+ufw allow 51821/tcp
+ufw allow 51822/tcp
+ufw allow 51823/tcp
+ufw allow 51824/tcp
+ufw allow 51825/tcp
+ufw allow 8443/tcp
+ufw allow 9443/tcp
+ufw allow 62050/tcp
+ufw allow 62051/tcp
+
+ufw --force enable
+
+echo "==============================================="
+echo "private key: $PRIVATE_KEY"
+echo "public key: $PUBLIC_KEY"
+echo "ShortIds: $SHORTIDS"
+echo "UUID: $XRAY_UUID"
+echo "==============================================="
+
+echo "marzban installation and configuration completed successfully!"
+echo "You can access marzban at https://$DOMAIN"
+echo "Make sure to configure your Xray clients with the provided Reality keys and UUID."
+echo "==============================================="
+
+
+read -p "Do you want to reboot now? [Y/n]: " answer
+answer=${answer:-Y}
+if [[ "$answer" =~ ^[Yy]$ ]]; then
+  echo "Rebooting system..."
+  reboot
+else
+  echo "Reboot cancelled. Please reboot manually if needed."
+fi

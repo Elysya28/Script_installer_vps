@@ -1,0 +1,29 @@
+services:
+  marzban:
+    image: gozargah/marzban:latest
+    restart: always
+    env_file: .env
+    volumes:
+      - /var/lib/marzban:/var/lib/marzban
+    ports:
+      - "8000:8000"
+    networks:
+      - marzban-net
+
+  nginx:
+    image: nginx:latest
+    restart: always
+    volumes:
+      - /opt/marzban/nginx.conf:/etc/nginx/nginx.conf
+      - /var/lib/marzban/certs:/etc/nginx/certs
+      - /var/www/html:/var/www/html
+    ports:
+      - "443:443"
+    depends_on:
+      - marzban
+    networks:
+      - marzban-net
+
+networks:
+  marzban-net:
+    driver: bridge
