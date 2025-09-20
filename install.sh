@@ -2,7 +2,6 @@
 
 # ==============================================================================
 # Skrip untuk mengunduh, mengekstrak, dan menjalankan VLESS Manager
-# Fitur: Membersihkan dirinya sendiri setelah selesai.
 # ==============================================================================
 
 # Hentikan eksekusi jika ada perintah yang gagal
@@ -32,20 +31,15 @@ fi
 log "Memeriksa perangkat yang dibutuhkan (wget, unzip, tar)..."
 if ! command -v wget &> /dev/null || ! command -v unzip &> /dev/null || ! command -v tar &> /dev/null; then
     log "wget/unzip/tar tidak ditemukan. Mencoba menginstall..."
-    # Lakukan update hanya jika diperlukan untuk mempercepat
     apt-get update
     apt-get install -y wget unzip tar
 fi
 
 # --- Instalasi Speedtest CLI ---
 log "Menginstall Speedtest CLI..."
-# Unduh file, jika gagal tampilkan pesan error dan keluar
 wget -q https://install.speedtest.net/app/cli/ookla-speedtest-1.2.0-linux-x86_64.tgz || { echo "Kesalahan: Gagal mengunduh speedtest." >&2; exit 1; }
-# Ekstrak file, sembunyikan output. Jika gagal, tampilkan error dan keluar
 tar xzf ookla-speedtest-1.2.0-linux-x86_64.tgz > /dev/null 2>&1 || { echo "Kesalahan: Gagal mengekstrak speedtest." >&2; exit 1; }
-# Pindahkan ke direktori bin agar bisa dipanggil secara global. Jika gagal, tampilkan error dan keluar
 mv speedtest /usr/bin || { echo "Kesalahan: Gagal memindahkan speedtest ke /usr/bin (perlu akses root?)." >&2; exit 1; }
-# Bersihkan file sisa instalasi
 rm -f ookla-speedtest-1.2.0-linux-x86_64.tgz speedtest.* > /dev/null 2>&1
 log "Speedtest CLI berhasil diinstall."
 
