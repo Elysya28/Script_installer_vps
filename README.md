@@ -1,4 +1,4 @@
-# trojan-vps
+# Vless-vps
 <br>Ini Hanya Menggunakan Protocol Vless WS.<br> 
 
 <br>Ketik menu ( untuk masuk ke tampilan main menu )<br>
