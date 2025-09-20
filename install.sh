@@ -10,7 +10,7 @@ set -e
 
 # --- Variabel Konfigurasi ---
 TARGET_DIR="/root/vless-manager"
-FILE_URL="https://raw.githubusercontent.com/Elysya28/Script_installer_vps/main/vless-manager.zip"
+FILE_URL="https://raw.githubusercontent.com/Elysya28/Script_installer_vps/vless/vless-manager.zip"
 ZIP_FILE_NAME="vless-manager.zip"
 EXEC_SCRIPT="main.sh"
 
