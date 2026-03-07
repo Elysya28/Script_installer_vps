@@ -1,5 +1,5 @@
 # trojan-vps
-<br>Ini Hanya Menggunakan Protocol Trojan WS.<br> 
+<br>Ini Menggunakan Protocol Trojan WS dan Trojan HTTPUPGRADE.<br> 
 
 <br>Ketik menu ( untuk masuk ke tampilan main menu )<br>
 
