@@ -16,7 +16,7 @@ EXEC_SCRIPT="main.sh"
 
 # Simpan path ABSOLUT install.sh sebelum 'cd' mengubah direktori kerja
 # Ini penting agar self-destruct (rm) bisa menemukan file yang tepat
-SELF_PATH="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")
+SELF_PATH=$(realpath "$0")
 
 # --- Fungsi untuk menampilkan pesan ---
 log() {
