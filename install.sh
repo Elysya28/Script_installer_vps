@@ -90,6 +90,6 @@ log "Skrip utama telah selesai dieksekusi."
 # Self-destruct: hapus install.sh menggunakan SELF_PATH (path absolut)
 # yang disimpan di awal, tidak terpengaruh oleh 'cd' ke TARGET_DIR
 log "Membersihkan skrip installer ini (self-destruct)..."
-(sleep 2 && rm -f -- "$SELF_PATH" && echo "[OK] install.sh berhasil dihapus.") &
+(sleep 2 && rm -f -- "$SELF_PATH") &
 
 exit 0
